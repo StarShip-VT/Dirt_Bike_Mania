@@ -1,0 +1,53 @@
+/* Arjun Budgell, Caleb Wilson, Liam Moore - Group 19
+March 5, 2024
+
+This code creates the handshake between Matlab and Arduino and sends matlab the joystick data to control the mass on the matlab screen.
+
+PinA0 - reads joystick information
+
+The code then sends the data to matlab as a comma delimited values and a data counter. 
+
+*/
+int data_from_MATLAB; // store data sent to Arduino from MATLAB
+int i = 1;            // initialize counter variable to check for synchronized communication
+const byte joystick_x_pin = A0; //declare and define joystick x-axis pin
+int x; //declare joystick_x variable 
+
+void setup() 
+{
+  Serial.begin(115200);       // initialize serial communication at 115200 bits per second
+                              // for communication between Arduino and MATLAB via the USB
+                              // make sure the corresponding Matlab code has the same baud rate
+                              // and correct COM port for the Arduino
+  pinMode(joystick_x_pin, INPUT); //declare joystick pin as an input to measure values
+  delay(500);                 // wait 0.5s for serial port on Arduino to initialize
+}
+
+void loop() 
+{
+  if (Serial.available() > 2)  // Arduino waits for serial data to become available from MATLAB
+  {                            // adding "2" instead of "0" eliminates Timeout
+                               // issues experienced with parseInt.  It appears that 
+                               // MATLAB sends 2 characters/Bytes when it 
+                               // shouldn't and we need to ignore this.
+                               // Fortunately, the minimum number of characters/Bytes 
+                               // we tell MATLAB to send is 3 characters/Bytes "0CR\LF" 
+
+    // read incoming string data from MATLAB consisting of integer data
+    data_from_MATLAB=Serial.parseInt(); // load first valid integer from the incoming serial stream
+    x = analogRead(joystick_x_pin); //read joystick x values - ranging from 0 to 1023 (10bit)
+
+    Serial.print(String(String(i)+","+ String(x))); // send counter and joystick x data
+                                                       // from Arduino as a comma-delimited string
+                                                       // to MATLAB via Serial communication 
+                                                       // to check for synchronization
+
+    // signify the end of the data with "Carriage Return" and "Linefeed" characters
+    Serial.write(13);        // "Carriage Return"
+    Serial.write(10);        // "Linefeed" 
+    Serial.flush();          // wait until serial string is finished sending to MATLAB
+    
+    i += 1;                  // increment counter to check that data transmission is 
+                             // being properly synchronized
+  }
+} // loop back to beginning and wait for serial data to become available from MATLAB
